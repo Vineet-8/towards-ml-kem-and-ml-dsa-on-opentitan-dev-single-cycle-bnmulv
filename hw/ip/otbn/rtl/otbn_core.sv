@@ -297,6 +297,10 @@ module otbn_core
 
   logic req_sec_wipe_urnd_keys_q;
 
+
+  logic [4:0] rejv_count;
+  logic [4:0] merv_offset;
+  
   // Start stop control start OTBN execution when requested and deals with any pre start or post
   // stop actions.
   otbn_start_stop_control #(
@@ -455,6 +459,9 @@ module otbn_core
     .err_bits_o         (controller_err_bits),
     .recoverable_err_o,
 
+
+    .rejv_count_i(rejv_count),
+    .merv_offset_o(merv_offset),
     // Next instruction selection (to instruction fetch)
     .insn_fetch_req_addr_o     (insn_fetch_req_addr),
     .insn_fetch_req_valid_o    (insn_fetch_req_valid),
@@ -883,7 +890,9 @@ module otbn_core
     .kmac_app_req_o,
 
     .alu_predec_error_o(alu_bignum_predec_error),
-    .ispr_predec_error_o(ispr_predec_error)
+    .ispr_predec_error_o(ispr_predec_error),
+    .rejv_count_o(rejv_count),
+    .merv_offset_i(merv_offset)
   );
 
   otbn_mac_bignum u_otbn_mac_bignum (

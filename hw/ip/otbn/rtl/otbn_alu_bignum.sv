@@ -80,6 +80,8 @@ module otbn_alu_bignum
   input  logic                  operation_valid_i,
   input  logic                  operation_commit_i, // used for SVAs only
   output logic [WLEN-1:0]       operation_result_o,
+  output logic [4:0]            rejv_count_o,
+  input  logic [4:0]            merv_offset_i,
   output logic                  selection_flag_o,
 
   output logic [63:0]           mod_o,
@@ -1113,7 +1115,26 @@ module otbn_alu_bignum
     endcase
   end
 
+  logic [WLEN-1:0] rejv_result;
+  logic [4:0]      rejv_count;
+  otbn_rejv_unit #(.WLEN(WLEN)) u_otbn_rejv_unit (
+    .operand_i(operation_i.operand_a), .mod_i(mod_no_intg_q),
+    .vec_type_i(operation_i.vector_type == alu_8s), .result_o(rejv_result), .count_o(rejv_count)
+  );
+  assign rejv_count_o = rejv_count;
 
+  logic [WLEN-1:0] extv_result;
+  otbn_extv_unit #(.WLEN(WLEN)) u_otbn_extv_unit (
+    .operand_i(operation_i.operand_a),
+    .vec_type_i(operation_i.vector_type == alu_8s), .result_o(extv_result)
+  );
+
+  logic [WLEN-1:0] merv_result;
+  otbn_merv_unit #(.WLEN(WLEN)) u_otbn_merv_unit (
+    .accumulator_i(operation_i.operand_b), .new_values_i(operation_i.operand_a),
+    .offset_i(merv_offset_i), .vec_type_i(operation_i.vector_type == alu_8s), .result_o(merv_result)
+  );
+  
   //////////////////
   // Adders X & Y //
   //////////////////
@@ -1515,6 +1536,9 @@ module otbn_alu_bignum
       AluOpBignumTrn: begin
         expected_trn_type = operation_i.trn_type;
       end
+      AluOpBignumRejv: begin end
+      AluOpBignumExtv: begin end
+      AluOpBignumMerv: begin end
       // No operation, do nothing.
       AluOpBignumNone: ;
       default: ;
@@ -1683,6 +1707,19 @@ module otbn_alu_bignum
 
       AluOpBignumTrn: begin
         operation_result_o = trn_res;
+        adder_y_res_used = 1'b0;
+      end
+      
+      AluOpBignumRejv: begin
+        operation_result_o = rejv_result;
+        adder_y_res_used = 1'b0;
+      end
+      AluOpBignumExtv: begin
+        operation_result_o = extv_result;
+        adder_y_res_used = 1'b0;
+      end
+      AluOpBignumMerv: begin
+        operation_result_o = merv_result;
         adder_y_res_used = 1'b0;
       end
 

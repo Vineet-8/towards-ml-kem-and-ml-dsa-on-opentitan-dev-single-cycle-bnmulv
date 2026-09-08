@@ -7,3 +7,4 @@ package(default_visibility = ["//visibility:public"])
 exports_files([
     "gen_requirements.sh",
 ])
+exports_files(["rules_python_pkginfo_fallback.patch"])

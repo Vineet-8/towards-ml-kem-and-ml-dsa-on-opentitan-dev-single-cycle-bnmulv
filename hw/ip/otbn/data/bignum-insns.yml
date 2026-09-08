@@ -1269,3 +1269,109 @@
   lsu:
     type: wsr-store
     target: [wsr]
+
+- mnemonic: bn.extv
+  synopsis: Bit-field Extraction Vector
+  operands:
+    - name: type
+      abbrev: t
+      type: enum(.16H,.8S)
+      doc: |
+        Select the data type of the destination. `.16H` extracts 16 × 12-bit
+        fields into 16-bit lanes. `.8S` extracts 8 × 24-bit fields into 32-bit
+        lanes.
+    - name: wrd
+      doc: Destination WDR (extracted candidates)
+      type: wrb
+    - name: wrs1
+      doc: Source WDR (raw byte stream from SHAKE)
+      type: wrs
+  glued-ops: true
+  doc: |
+    Extract consecutive bit-fields from a byte stream and place them into
+    lane-aligned positions with zero-extension. Consumes 192 bits from wrs1.
+    For .16H: 16 × 12-bit slices → 16 × 16-bit lanes (for ML-KEM).
+    For .8S:   8 × 24-bit slices →  8 × 32-bit lanes (for ML-DSA).
+  errs: []
+  iflow:
+    - to: [wrd]
+      from: [wrs1]
+  encoding:
+    scheme: bnextv
+    mapping:
+      wrs1: wrs1
+      funct3: b101
+      wrd: wrd
+      type: type
+
+- mnemonic: bn.rejv
+  synopsis: Compare and Compact Vector
+  operands:
+    - name: type
+      abbrev: t
+      type: enum(.16H,.8S)
+      doc: |
+        Select the data type. `.16H` compares 16 × 16-bit lanes. `.8S`
+        compares 8 × 32-bit lanes.
+    - name: wrd
+      doc: Destination WDR (compacted accepted values, left-justified)
+      type: wrb
+    - name: wrs1
+      doc: Source WDR (candidate values from bn.extv)
+      type: wrs
+    - name: grd
+      doc: Destination GPR (count of accepted values)
+      type: grs
+  glued-ops: true
+  doc: |
+    Compare each lane against the MOD WSR. Accepted values (lane < MOD) are
+    packed left-justified into wrd. The count of accepted values is written
+    to grd. Rejected lanes are zeroed. Constant-time execution.
+  errs: []
+  iflow:
+    - to: [wrd, grd]
+      from: [wrs1]
+  encoding:
+    scheme: bnrejv
+    mapping:
+      wrs1: wrs1
+      grd: grd
+      funct3: b110
+      wrd: wrd
+      type: type
+
+- mnemonic: bn.merv
+  synopsis: Variable-Offset Vector Merge
+  operands:
+    - name: type
+      abbrev: t
+      type: enum(.16H,.8S)
+      doc: |
+        Select the data type. `.16H` merges 16-bit lanes. `.8S` merges 32-bit
+        lanes.
+    - name: wrd
+      doc: Accumulator WDR (read-modify-write)
+      type: wrb
+    - name: wrs1
+      doc: Source WDR (new values from bn.rejv)
+      type: wrs
+    - name: grs
+      doc: Source GPR (current lane offset in accumulator)
+      type: grs
+  glued-ops: true
+  doc: |
+    Barrel-shift wrs1 left by (grs × lane_width) bits and OR into wrd.
+    Merges compacted values from bn.rejv into an accumulator at a variable
+    lane offset. Overflow past the top lane is discarded.
+  errs: []
+  iflow:
+    - to: [wrd]
+      from: [wrd, wrs1, grs]
+  encoding:
+    scheme: bnmerv
+    mapping:
+      wrs1: wrs1
+      grs: grs
+      funct3: b100
+      wrd: wrd
+      type: type

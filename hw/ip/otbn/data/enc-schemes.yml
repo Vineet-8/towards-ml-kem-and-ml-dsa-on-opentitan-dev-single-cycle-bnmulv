@@ -442,3 +442,50 @@ wcsr:
     fixed:
       bits: 30-28
       value: bxxx
+
+# A partial scheme for custom instructions with opcode b10011 (7'h4F)
+# Added by rejection sampling pipeline (bn.extv/rejv/merv)
+custom7:
+  parents:
+    - rv(opcode=b10011)
+
+# Scheme for bn.extv — reads wrs1 (source WDR), writes wrd, uses type bit [27]
+bnextv:
+  parents:
+    - custom7
+    - wrd
+    - funct3
+  fields:
+    wrs1: 19-15
+    type: 27
+    fixed:
+      bits: 31-28,26-25,24-20
+      value: bxxxxxxxxxxx
+
+# Scheme for bn.rejv — reads wrs1 (source WDR), writes wrd + grd (count)
+bnrejv:
+  parents:
+    - custom7
+    - wrd
+    - funct3
+  fields:
+    wrs1: 19-15
+    grd: 24-20
+    type: 27
+    fixed:
+      bits: 31-28,26-25
+      value: bxxxxxx
+
+# Scheme for bn.merv — reads accumulator wrd + wrs1 (new values) + grs (offset)
+bnmerv:
+  parents:
+    - custom7
+    - wrd
+    - funct3
+  fields:
+    wrs1: 19-15
+    grs: 24-20
+    type: 27
+    fixed:
+      bits: 31-28,26-25
+      value: bxxxxxx

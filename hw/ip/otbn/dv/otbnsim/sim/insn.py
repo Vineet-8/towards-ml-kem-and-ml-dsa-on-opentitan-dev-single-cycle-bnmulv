@@ -1634,6 +1634,101 @@ class BNTRN(OTBNInsn):
             eprint(f"trn: {format(a,'064x')}, {format(b,'064x')}, {format(result, '064x')}")
         state.wdrs.get_reg(self.wrd).write_unsigned(result)
 
+class BNEXTV(OTBNInsn):
+    insn = insn_for_mnemonic('bn.extv', 3)
+
+    def __init__(self, raw: int, op_vals: Dict[str, int]):
+        super().__init__(raw, op_vals)
+        self.wrd = op_vals['wrd']
+        self.wrs1 = op_vals['wrs1']
+        self.type = op_vals['type']
+
+    def execute(self, state: OTBNState) -> None:
+        src = state.wdrs.get_reg(self.wrs1).read_unsigned()
+        
+        if self.type == 0:
+            nlanes = 16
+            src_width = 12
+            dst_width = 16
+        else:
+            nlanes = 8
+            src_width = 24
+            dst_width = 32
+
+        result = 0
+        src_mask = (1 << (23 if self.type == 1 else src_width)) - 1
+        for i in range(nlanes):
+            val = (src >> (i * src_width)) & src_mask
+            result |= val << (i * dst_width)
+            
+        state.wdrs.get_reg(self.wrd).write_unsigned(result)
+
+
+class BNREJV(OTBNInsn):
+    insn = insn_for_mnemonic('bn.rejv', 4)
+
+    def __init__(self, raw: int, op_vals: Dict[str, int]):
+        super().__init__(raw, op_vals)
+        self.wrd = op_vals['wrd']
+        self.wrs1 = op_vals['wrs1']
+        self.grd = op_vals['grd']
+        self.type = op_vals['type']
+
+    def execute(self, state: OTBNState) -> None:
+        src = state.wdrs.get_reg(self.wrs1).read_unsigned()
+        mod = state.wsrs.MOD.read_unsigned()
+
+        if self.type == 0:
+            lane_width, nlanes = 16, 16
+        else:
+            lane_width, nlanes = 32, 8
+
+        lane_mask = (1 << lane_width) - 1
+        mod_val = mod & lane_mask
+
+        accepted = []
+        for i in range(nlanes):
+            v = (src >> (i * lane_width)) & lane_mask
+            if v < mod_val:
+                accepted.append(v)
+
+        result = 0
+        for i, v in enumerate(accepted):
+            result |= v << (i * lane_width)
+
+        count = len(accepted)
+        print(f"BNREJV src={hex(src)} count={count} result={hex(result)}")
+        state.wdrs.get_reg(self.wrd).write_unsigned(result)
+        state.gprs.get_reg(self.grd).write_unsigned(count)
+
+
+class BNMERV(OTBNInsn):
+    insn = insn_for_mnemonic('bn.merv', 4)
+
+    def __init__(self, raw: int, op_vals: Dict[str, int]):
+        super().__init__(raw, op_vals)
+        self.wrd = op_vals['wrd']
+        self.wrs1 = op_vals['wrs1']
+        self.grs = op_vals['grs']
+        self.type = op_vals['type']
+
+    def execute(self, state: OTBNState) -> None:
+        new_vals = state.wdrs.get_reg(self.wrs1).read_unsigned()
+        accumulator = state.wdrs.get_reg(self.wrd).read_unsigned()
+        offset = state.gprs.get_reg(self.grs).read_unsigned() & 0x1F
+
+        if self.type == 0:
+            lane_width = 16
+        else:
+            lane_width = 32
+
+        shift_bits = offset * lane_width
+        shifted = (new_vals << shift_bits) & ((1 << 256) - 1)
+        result = accumulator | shifted
+        print(f"BNMERV offset={offset} shifted={hex(shifted)} result={hex(result)}")
+        state.wdrs.get_reg(self.wrd).write_unsigned(result)
+
+
 INSN_CLASSES = [
     ADD, ADDI, LUI, SUB, SLL, SLLI, SRL, SRLI, SRA, SRAI,
     AND, ANDI, OR, ORI, XOR, XORI,
@@ -1654,5 +1749,7 @@ INSN_CLASSES = [
     BNCMP, BNCMPB,
     BNLID, BNSID,
     BNMOV, BNMOVR, BNTRN,
-    BNWSRR, BNWSRW
+    BNWSRR, BNWSRW,
+    BNEXTV, BNREJV, BNMERV
 ]
+

@@ -43,6 +43,9 @@ filesets:
       - rtl/otbn_mac_bignum.sv
       - rtl/otbn_mul.sv
       - rtl/otbn_mulv.sv
+      - rtl/otbn_rejv_unit.sv
+      - rtl/otbn_extv_unit.sv
+      - rtl/otbn_merv_unit.sv
       - rtl/otbn_loop_controller.sv
       - rtl/otbn_stack.sv
       - rtl/otbn_rnd.sv
