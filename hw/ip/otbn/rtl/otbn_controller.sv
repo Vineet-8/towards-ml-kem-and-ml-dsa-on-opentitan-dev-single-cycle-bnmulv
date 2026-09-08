@@ -880,7 +880,11 @@ module otbn_controller
         insn_dec_bignum_i.d_inc: begin
           rf_base_wr_addr_o = insn_dec_base_i.b;
         end
-        default: ;
+        default: begin
+          if (insn_dec_base_i.rf_wdata_sel == RfWdSelRejv) begin
+            rf_base_wr_addr_o = insn_dec_base_i.b;
+          end
+        end
       endcase
     end
 
@@ -915,7 +919,7 @@ module otbn_controller
   assign alu_base_comparison_o.op = insn_dec_base_i.comparison_op;
 
   assign rf_base_rd_data_a_no_intg = rf_base_rd_data_a_intg_i[31:0];
-  assign merv_offset_o = rf_base_rd_data_a_no_intg[4:0];
+  assign merv_offset_o = rf_base_rd_data_b_no_intg[4:0];
   assign rf_base_rd_data_b_no_intg = rf_base_rd_data_b_intg_i[31:0];
   
   logic unused_rf_base_rd_a_intg_bits;

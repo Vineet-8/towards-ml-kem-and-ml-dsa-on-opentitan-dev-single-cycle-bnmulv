@@ -42,7 +42,7 @@ def find_tool(tool_name: str) -> str:
                                .format(tool_path, tool_name))
         return tool_path
 
-    default_location = '/home/vlsilab/.cache/bazel/_bazel_vlsilab/f2a474ba40eef742caef90b60b90ebfd/external/+lowrisc_rv32imcb_toolchain+lowrisc_rv32imcb_toolchain/bin'
+    default_location = '/tools/riscv/bin'
     paths = os.get_exec_path() + [default_location]
     for exec_path in paths:
         tool_path = os.path.join(exec_path, expanded)
