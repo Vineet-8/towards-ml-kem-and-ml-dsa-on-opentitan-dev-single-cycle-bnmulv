@@ -221,7 +221,8 @@ package otbn_pkg;
     InsnOpcodeBignumMulv     = 7'h4B,
     InsnOpcodeBignumTrn      = 7'h5F,
     InsnOpcodeBignumBaseMisc = 7'h7B,
-    InsnOpcodeBignumShiftv   = 7'h7F
+    InsnOpcodeBignumShiftv   = 7'h7F,
+    InsnOpcodeBignumRejv     = 7'h4F
   } insn_opcode_e;
 
   typedef enum logic [3:0] {
@@ -260,6 +261,9 @@ package otbn_pkg;
 
     AluOpBignumShv,
     AluOpBignumTrn,
+    AluOpBignumRejv,
+    AluOpBignumExtv,
+    AluOpBignumMerv,
 
     AluOpBignumNone
   } alu_op_bignum_e;
@@ -309,7 +313,7 @@ package otbn_pkg;
   } shamt_sel_bignum_e;
 
   // Regfile write data selection
-  typedef enum logic [2:0] {
+  typedef enum logic [3:0] {
     RfWdSelEx,
     RfWdSelNextPc,
     RfWdSelLsu,
@@ -317,7 +321,8 @@ package otbn_pkg;
     RfWdSelIncr,
     RfWdSelMac,
     RfWdSelMulv,
-    RfWdSelMovSel
+    RfWdSelMovSel,
+    RfWdSelRejv
   } rf_wd_sel_e;
 
   // Control and Status Registers (CSRs)

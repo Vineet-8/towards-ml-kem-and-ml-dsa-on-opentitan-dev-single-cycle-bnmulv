@@ -161,3 +161,9 @@ otbn_library(
         "symmetric.s", 
     ],
 )
+otbn_library(
+    name = "kyber_poly_gen_matrix_rejv",
+    srcs = [
+        "kyber_poly_gen_matrix_rejv.s",
+    ]
+)

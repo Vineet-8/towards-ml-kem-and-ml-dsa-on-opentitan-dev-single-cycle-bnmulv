@@ -1,3 +1,4 @@
+
 // Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
@@ -55,6 +56,9 @@ module otbn_decoder
   //////////////////////////////////////
   imm_b_sel_base_e   imm_b_mux_sel_base; // immediate selection for operand b in base ISA
   shamt_sel_bignum_e shift_amt_mux_sel_bignum; // shift amount selection in bignum ISA
+
+
+  logic rf_b_from_d_bignum;
 
   // Immediates from RV32I encoding
   logic [31:0] imm_i_type_base;
@@ -240,7 +244,7 @@ module otbn_decoder
 
   assign insn_dec_bignum_o = '{
     a:                   insn_rs1,
-    b:                   insn_rs2,
+    b:                   rf_b_from_d_bignum ? insn_rd : insn_rs2,
     d:                   insn_rd,
     i:                   imm_i_type_bignum,
     rf_a_indirect:       rf_a_indirect_bignum,
@@ -309,6 +313,7 @@ module otbn_decoder
     rf_ren_b_base          = 1'b0;
     rf_ren_a_bignum        = 1'b0;
     rf_ren_b_bignum        = 1'b0;
+    rf_b_from_d_bignum     = 1'b0;
     mac_en_bignum          = 1'b0;
 
     mulv_en                = 1'b0;
@@ -368,7 +373,7 @@ module otbn_decoder
           3'b001: begin
             unique case (insn[31:25])
               7'b0000000: illegal_insn = 1'b0;  // slli
-              default: illegal_insn = 1'b1;
+                 default: illegal_insn = 1'b1;
             endcase
           end
 
@@ -737,7 +742,20 @@ module otbn_decoder
         mulv_en       = 1'b1;
         rf_we_bignum = 1'b1;
       end
-
+      InsnOpcodeBignumRejv: begin
+        insn_subset         = InsnSubsetBignum;
+        rf_ren_a_bignum     = 1'b1;
+        rf_we_bignum        = 1'b1;
+        rf_wdata_sel_bignum = RfWdSelEx;
+        if (insn[14:12] == 3'b110) begin
+          rf_we_base          = 1'b1;
+          rf_wdata_sel_base   = RfWdSelRejv;
+        end else if (insn[14:12] == 3'b100) begin
+          rf_ren_b_bignum     = 1'b1;
+          rf_b_from_d_bignum  = 1'b1;
+          rf_ren_a_base       = 1'b1;
+        end
+      end
       default: illegal_insn = 1'b1;
     endcase
 
@@ -1044,7 +1062,14 @@ module otbn_decoder
         alu_op_b_mux_sel_bignum  = OpBSelRegister;
         alu_operator_bignum      = AluOpBignumTrn;
       end
-
+      InsnOpcodeBignumRejv: begin
+        if (insn[14:12] == 3'b110)
+          alu_operator_bignum = AluOpBignumRejv;
+        else if (insn[14:12] == 3'b100)
+          alu_operator_bignum = AluOpBignumMerv;
+        else
+          alu_operator_bignum = AluOpBignumExtv;
+      end
       default: ;
     endcase
 

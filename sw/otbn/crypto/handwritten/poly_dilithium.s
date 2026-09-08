@@ -1,3 +1,13 @@
+
+#define BN_EXTV_8S(wrd, wrs) \
+    .word (0x08000000 | ((wrs) << 15) | (0b101 << 12) | ((wrd) << 7) | 0x4F)
+
+#define BN_REJV_8S(wrd, wrs, grd) \
+    .word (0x08000000 | ((grd) << 20) | ((wrs) << 15) | (0b110 << 12) | ((wrd) << 7) | 0x4F)
+
+#define BN_MERV_8S(wrd, wrs, grs) \
+    .word (0x08000000 | ((grs) << 20) | ((wrs) << 15) | (0b100 << 12) | ((wrd) << 7) | 0x4F)
+
 /* Copyright "Towards ML-KEM & ML-DSA on OpenTitan" Authors */
 /* Licensed under the Apache License, Version 2.0, see LICENSE for details. */
 /* SPDX-License-Identifier: Apache-2.0 */
@@ -816,6 +826,7 @@ _aligned:
     li t3, 8
     #define accumulator_count t6
     li t6, 0
+    bn.xor accumulator, accumulator, accumulator
 
     /* Loop until 256 coefficients have been written to the output */
 
@@ -864,13 +875,14 @@ _rej_sample_loop:
     bne    a4, a6, _skip_store2 /* Reject if M, C are NOT set to 1, meaning
                                     NOT (q > cand) = (q <= cand) */
     
-    bn.rshi accumulator, cand, accumulator >> 32
+    BN_MERV_8S(13, 11, 31)
     addi accumulator_count, accumulator_count, 1
 
     bne accumulator_count, t3, _skip_store2
     
     bn.sid    t5, 0(a1++) /* Store to memory */
     li        accumulator_count, 0
+    bn.xor accumulator, accumulator, accumulator
 
     /* if we have written the last coefficient, exit */
     beq  a1, t0, _end_rej_sample_loop
@@ -902,13 +914,14 @@ _skip_store2:
     bne  a4, a6, _skip_store4 /* Reject if M, C are NOT set to 1, meaning
                                     NOT (q > cand) = (q <= cand) */
     
-    bn.rshi accumulator, cand, accumulator >> 32
+    BN_MERV_8S(13, 11, 31)
     addi accumulator_count, accumulator_count, 1
 
     bne accumulator_count, t3, _skip_store4
     
     bn.sid t5, 0(a1++) /* Store to memory */
     li accumulator_count, 0
+    bn.xor accumulator, accumulator, accumulator
     /* if we have written the last coefficient, exit */
     beq  a1, t0, _end_rej_sample_loop
 _skip_store4:
@@ -936,34 +949,70 @@ _end_rej_sample_loop:
     ret
 
 _poly_uniform_inner_loop:
-    li t4, 1
-    LOOPI 10, 12
-        beq a1, t0, _skip_store1
-        /* Mask shake output */
+    /* Step 1: Vectorized pipeline (8 candidates, 192 bits) */
+    BN_EXTV_8S(1, 8)         /* w1 = bn.extv.8S(shake_reg) */
+    BN_REJV_8S(2, 1, 7)      /* w2 = bn.rejv.8S(w1), t2 (x7) = accepted count */
+
+    /* Check if vector results fit in accumulator */
+    li   t1, 8
+    beq  t2, zero, _vec_done_dilithium
+
+    /* Calculate remaining capacity */
+    sub  t1, t1, t6          /* t1 = 8 - accumulator_count */
+
+    /* Merge accepted values */
+    BN_MERV_8S(13, 2, 31)    /* accumulator (w13) |= w2 << (t6 * 32) */
+    add  t6, t6, t2          /* t6 = new fill level */
+
+    /* Check if full: t6 >= 8 */
+    andi s7, t6, 8           /* Is bit 3 set? */
+    beq  s7, zero, _vec_done_dilithium
+
+    /* Store accumulator */
+    bn.sid t5, 0(a1++)       /* Store w13 (t5 = 13) */
+    beq  a1, t0, _vec_done_dilithium
+
+    /* Handle overflow */
+    bn.xor accumulator, accumulator, accumulator
+    addi t6, t6, -8
+    beq  t6, zero, _vec_done_dilithium
+
+    /* Shift w2 right by t1 lanes (t1 * 32 bits) to get overflow */
+    bn.xor w3, w3, w3
+_vec_overflow_shift_dilithium:
+    bn.rshi w2, bn0, w2 >> 32
+    addi    t1, t1, -1
+    bne     t1, zero, _vec_overflow_shift_dilithium
+
+    /* Merge overflow */
+    li t1, 0                 /* offset = 0 */
+    BN_MERV_8S(13, 2, 6)     /* offset is t1 (x6) */
+
+_vec_done_dilithium:
+    /* Step 2: Scalar remainder (2 candidates from bits [255:192]) */
+    bn.or shake_reg, bn0, shake_reg >> 192
+
+    LOOPI 2, 14
+        beq a1, t0, _scalar_skip_dilithium
         bn.and cand, shake_reg, coeff_mask
         
         bn.cmp cand, mod
-        csrrs  a4, 0x7C0, zero /* Read flags */
+        csrrs  a4, 0x7C0, zero
+        andi   a4, a4, 3
+        bne    a4, a6, _scalar_skip_dilithium
 
-        /* Z L M C */
-        andi a4, a4, 3 /* Mask flags */
-        /* In this comparison, the L flag will never be set. We avoid this by
-           multiplying the coefficient and q by 2 before the comparison. This
-           assures that both numbers will be even and thus, after a subtraction
-           the LSB will never be set. Therefore, we do not need to mask the
-           flags. */
-        bne  a4, a6, _skip_store1 /* Reject if M, C are NOT set to 1, meaning
-                                     NOT (q > cand) = (q <= cand) */
-        
-        bn.rshi accumulator, cand, accumulator >> 32
-        addi    accumulator_count, accumulator_count, 1
+        /* Accepted: merge single value using bn.merv */
+        BN_MERV_8S(13, 11, 31)   /* accumulator |= cand << (t6 * 32) */
+        addi   t6, t6, 1
 
-        bne accumulator_count, t3, _skip_store1 /* Accumulator not full yet */
+        /* Check if accumulator is full */
+        li     t1, 8
+        bne    t6, t1, _scalar_skip_dilithium
         
-        bn.sid    t5, 0(a1++) /* Store to memory */
-        li        accumulator_count, 0
-_skip_store1:
-        /* Shift out the 3 bytes we have read for the next potential coefficient */
+        bn.sid t5, 0(a1++)
+        li     t6, 0
+        bn.xor accumulator, accumulator, accumulator
+_scalar_skip_dilithium:
         bn.or shake_reg, bn0, shake_reg >> 24
     ret
 

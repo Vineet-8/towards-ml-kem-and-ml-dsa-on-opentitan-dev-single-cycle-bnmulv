@@ -105,6 +105,8 @@ module otbn_controller
   output logic                  alu_bignum_operation_valid_o,
   output logic                  alu_bignum_operation_commit_o,
   input  logic [WLEN-1:0]       alu_bignum_operation_result_i,
+  input  logic [4:0]            rejv_count_i,
+  output logic [4:0]            merv_offset_o,
   input  logic                  alu_bignum_selection_flag_i,
 
   // Bignum MAC
@@ -913,8 +915,9 @@ module otbn_controller
   assign alu_base_comparison_o.op = insn_dec_base_i.comparison_op;
 
   assign rf_base_rd_data_a_no_intg = rf_base_rd_data_a_intg_i[31:0];
+  assign merv_offset_o = rf_base_rd_data_a_no_intg[4:0];
   assign rf_base_rd_data_b_no_intg = rf_base_rd_data_b_intg_i[31:0];
-
+  
   logic unused_rf_base_rd_a_intg_bits;
 
   // TODO(#18266): Implement GPR to ISPR end to end integrity path (ISPR writes from GPR take data
@@ -949,6 +952,9 @@ module otbn_controller
       RfWdSelLsu: begin
         rf_base_wr_data_intg_sel_o = 1'b1;
         rf_base_wr_data_intg_o     = lsu_base_rdata_i;
+      end
+      RfWdSelRejv: begin
+        rf_base_wr_data_no_intg_o  = {27'b0, rejv_count_i};
       end
       default: ;
     endcase

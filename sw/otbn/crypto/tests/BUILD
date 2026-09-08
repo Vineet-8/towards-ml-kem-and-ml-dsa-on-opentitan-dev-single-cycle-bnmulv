@@ -1008,21 +1008,6 @@ otbn_sim_test(
     ],
 )
 
-otbn_sim_py_test(
-    name = "dilithium_test_old",
-    srcs = [
-    ],
-    deps = [
-        ":ntt_dilithium_test",
-        ":intt_dilithium_test",
-        ":poly_pointwise_dilithium_test",
-        ":poly_add_dilithium_test",
-        ":poly_sub_dilithium_test",
-        ":key_pair_dilithium_test",
-        ":verify_dilithium_test",
-        ":sign_dilithium_test",
-        ],
-)
 
 otbn_sim_test(
     name = "relprime_f4_test",
