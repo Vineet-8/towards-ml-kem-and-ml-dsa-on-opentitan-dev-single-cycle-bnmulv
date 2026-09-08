@@ -1697,7 +1697,7 @@ class BNREJV(OTBNInsn):
             result |= v << (i * lane_width)
 
         count = len(accepted)
-        print(f"BNREJV src={hex(src)} count={count} result={hex(result)}")
+        
         state.wdrs.get_reg(self.wrd).write_unsigned(result)
         state.gprs.get_reg(self.grd).write_unsigned(count)
 
@@ -1725,7 +1725,7 @@ class BNMERV(OTBNInsn):
         shift_bits = offset * lane_width
         shifted = (new_vals << shift_bits) & ((1 << 256) - 1)
         result = accumulator | shifted
-        print(f"BNMERV offset={offset} shifted={hex(shifted)} result={hex(result)}")
+        
         state.wdrs.get_reg(self.wrd).write_unsigned(result)
 
 

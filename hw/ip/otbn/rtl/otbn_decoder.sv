@@ -753,7 +753,7 @@ module otbn_decoder
         end else if (insn[14:12] == 3'b100) begin
           rf_ren_b_bignum     = 1'b1;
           rf_b_from_d_bignum  = 1'b1;
-          rf_ren_a_base       = 1'b1;
+          rf_ren_b_base       = 1'b1;
         end
       end
       default: illegal_insn = 1'b1;
