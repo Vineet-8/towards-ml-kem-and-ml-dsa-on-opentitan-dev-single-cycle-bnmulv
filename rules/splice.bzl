@@ -10,6 +10,23 @@ load("//rules/opentitan:toolchain.bzl", "LOCALTOOLS_TOOLCHAIN")
 
 def _bitstream_splice_impl(ctx):
     tc = ctx.toolchains[LOCALTOOLS_TOOLCHAIN]
+
+    # When bitstream=skip, the source is skip.bit (a magic marker file).
+    # Pass it through without splicing so opentitantool can read the
+    # __skip__ marker and skip bitstream loading at test time.
+    if ctx.file.src.basename == "skip.bit":
+        output = ctx.actions.declare_file("{}.bit".format(ctx.label.name))
+        ctx.actions.symlink(output = output, target_file = ctx.file.src)
+        return [
+            DefaultInfo(
+                files = depset([output]),
+                data_runfiles = ctx.runfiles(files = [output]),
+            ),
+            OutputGroupInfo(
+                bitstream = depset([output]),
+            ),
+        ]
+
     update = ctx.actions.declare_file("{}.update.mem".format(ctx.label.name))
     spliced = ctx.actions.declare_file("{}.spliced.bit".format(ctx.label.name))
     output = ctx.actions.declare_file("{}.bit".format(ctx.label.name))
@@ -114,3 +131,4 @@ bitstream_splice_ = rule(
 
 def bitstream_splice(testonly = True, **kwargs):
     bitstream_splice_(testonly = testonly, **kwargs)
+

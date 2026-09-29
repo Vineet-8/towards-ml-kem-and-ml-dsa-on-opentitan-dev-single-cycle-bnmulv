@@ -16,7 +16,7 @@ ITERATIONS = 1
 CTX=b"\x00"*4+b"\x11"*4+b"\x22"*4+b"\x33"*4+b"\x44"*4+b"\x55"*4+b"\x66"*4+b"\x77"*4
 CTXLEN = 32
 
-DATABASE_PATH = "/home/dev/src/dilithium_bench.db"
+DATABASE_PATH = "/tmp/dilithium_bench.db"
 
 
 def bench_key_pair(operation, ref):
@@ -133,6 +133,7 @@ def run_bench(operation: str):
             cur.execute(f"INSERT INTO benchmark_iteration (benchmark_id) VALUES({current_benchmark_id})")
             current_benchmark_iteration_id = cur.lastrowid
             cur.execute(f"INSERT INTO cycles (cycles, benchmark_iteration_id) VALUES({result['insn_count'] + result['stall_count']}, {current_benchmark_iteration_id})")
+            print(f"OTBN_CYCLES: {operation} = {result['insn_count'] + result['stall_count']}")
             cur.execute(f"INSERT INTO stalls (stalls, benchmark_iteration_id) VALUES({result['stall_count']}, {current_benchmark_iteration_id})")
             for func_name, per_instr_data in result["func_instrs"].items():
                 for instr_name, cyc_stall in per_instr_data.items():

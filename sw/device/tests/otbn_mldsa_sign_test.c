@@ -113,6 +113,8 @@ static void test_sec_wipe(dif_otbn_t *otbn) {
 }
 
 static void test_mldsa_sign(dif_otbn_t *otbn) {
+  uint32_t insn_cnt;
+
   LOG_INFO("Generate zeta");
   uint8_t zeta[SEEDBYTES];
   randombytes(zeta, SEEDBYTES);
@@ -157,6 +159,8 @@ static void test_mldsa_sign(dif_otbn_t *otbn) {
   CHECK_STATUS_OK(otbn_testutils_execute(otbn));
   CHECK(dif_otbn_set_ctrl_software_errs_fatal(otbn, false) == kDifUnavailable);
   CHECK_STATUS_OK(otbn_testutils_wait_for_done(otbn, kDifOtbnErrBitsNoError));
+  CHECK_DIF_OK(dif_otbn_get_insn_cnt(otbn, &insn_cnt));
+  LOG_INFO("Plain sign insn_cnt: %u", insn_cnt);
 
   LOG_INFO("Retrieve results");
   CHECK_STATUS_OK(otbn_testutils_read_data(otbn, CRYPTO_BYTES_ALIGNED, kSigPlain, &sig));
@@ -180,6 +184,8 @@ static void test_mldsa_sign(dif_otbn_t *otbn) {
   CHECK_STATUS_OK(otbn_testutils_execute(otbn));
   CHECK(dif_otbn_set_ctrl_software_errs_fatal(otbn, false) == kDifUnavailable);
   CHECK_STATUS_OK(otbn_testutils_wait_for_done(otbn, kDifOtbnErrBitsNoError));
+  CHECK_DIF_OK(dif_otbn_get_insn_cnt(otbn, &insn_cnt));
+  LOG_INFO("Base sign insn_cnt: %u", insn_cnt);
 
   LOG_INFO("Retrieve results");
   CHECK_STATUS_OK(otbn_testutils_read_data(otbn, CRYPTO_BYTES_ALIGNED, kSigBase, &sig));
@@ -203,6 +209,8 @@ static void test_mldsa_sign(dif_otbn_t *otbn) {
   CHECK_STATUS_OK(otbn_testutils_execute(otbn));
   CHECK(dif_otbn_set_ctrl_software_errs_fatal(otbn, false) == kDifUnavailable);
   CHECK_STATUS_OK(otbn_testutils_wait_for_done(otbn, kDifOtbnErrBitsNoError));
+  CHECK_DIF_OK(dif_otbn_get_insn_cnt(otbn, &insn_cnt));
+  LOG_INFO("ISAEXT sign insn_cnt: %u", insn_cnt);
 
   LOG_INFO("Retrieve results");
   CHECK_STATUS_OK(otbn_testutils_read_data(otbn, CRYPTO_BYTES_ALIGNED, kSigIsaext, &sig));
@@ -238,3 +246,4 @@ bool test_main(void) {
 
   return true;
 }
+

@@ -14,12 +14,12 @@ from create_db import create_db
 NPROC = 1
 ITERATIONS = 1
 
-DATABASE_PATH = "/home/dev/src/kyber_bench.db"
+DATABASE_PATH = "/tmp/kyber_bench.db"
 
 
 def bench_mlkem_keypair(operation, ref):
-    d = os.urandom(32)
-    z = os.urandom(32)
+    d = bytes([0] * 32)
+    z = bytes([1] * 32)
     
     ek, dk = ref._keygen_internal(d, z)
 
@@ -130,6 +130,7 @@ def run_bench(operation: str):
             cur.execute(f"INSERT INTO benchmark_iteration (benchmark_id) VALUES({current_benchmark_id})")
             current_benchmark_iteration_id = cur.lastrowid
             cur.execute(f"INSERT INTO cycles (cycles, benchmark_iteration_id) VALUES({result['insn_count'] + result['stall_count']}, {current_benchmark_iteration_id})")
+            print(f"OTBN_CYCLES: {operation} = {result['insn_count'] + result['stall_count']}")
             cur.execute(f"INSERT INTO stalls (stalls, benchmark_iteration_id) VALUES({result['stall_count']}, {current_benchmark_iteration_id})")
             for func_name, per_instr_data in result["func_instrs"].items():
                 for instr_name, cyc_stall in per_instr_data.items():
