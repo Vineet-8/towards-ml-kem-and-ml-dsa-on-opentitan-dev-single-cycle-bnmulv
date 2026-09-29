@@ -49,6 +49,7 @@ module otbn_predecode
   logic rf_we_d_base;
   logic rf_ren_a_bignum;
   logic rf_ren_b_bignum;
+  logic rf_b_from_d_bignum;
   logic rf_we_bignum;
   logic alu_bignum_adder_x_en;
   logic alu_bignum_x_res_operand_a_sel;
@@ -154,9 +155,10 @@ module otbn_predecode
     rf_we_b_base    = 1'b0;
     rf_we_d_base    = 1'b0;
 
-    rf_ren_a_bignum = 1'b0;
-    rf_ren_b_bignum = 1'b0;
-    rf_we_bignum    = 1'b0;
+    rf_ren_a_bignum    = 1'b0;
+    rf_ren_b_bignum    = 1'b0;
+    rf_b_from_d_bignum = 1'b0;
+    rf_we_bignum       = 1'b0;
 
     alu_bignum_adder_x_en            = 1'b0;
     alu_bignum_x_res_operand_a_sel   = 1'b0;
@@ -524,6 +526,23 @@ module otbn_predecode
           mulv_bignum_type = mulv_type_t'(imem_rdata_i[27:25]);;
       end
 
+      //////////////////////////////////////////////////
+      //  BN.EXTV / BN.REJV / BN.MERV (opcode 0x4F)  //
+      //////////////////////////////////////////////////
+      InsnOpcodeBignumRejv: begin
+          rf_ren_a_bignum = 1'b1;
+          rf_we_bignum    = 1'b1;
+          if (imem_rdata_i[14:12] == 3'b110) begin
+            // bn.rejv: also writes accepted count to base RF
+            rf_we_d_base = 1'b1;
+          end else if (imem_rdata_i[14:12] == 3'b100) begin
+            // bn.merv: reads accumulator from wrd (b port routed via insn_rd) and offset from base RF
+            rf_ren_b_bignum    = 1'b1;
+            rf_b_from_d_bignum = 1'b1;
+            rf_ren_b_base      = 1'b1;
+          end
+      end
+
         default: ;
       endcase
     end
@@ -607,7 +626,7 @@ module otbn_predecode
   prim_onehot_enc #(
     .OneHotWidth(NWdr)
   ) rf_ren_b_bignum_onehot_enc (
-    .in_i  (insn_rs2),
+    .in_i  (rf_b_from_d_bignum ? insn_rd : insn_rs2),
     .en_i  (rf_ren_b_bignum),
     .out_o (rf_predec_bignum_o.rf_ren_b)
   );
@@ -657,3 +676,4 @@ module otbn_predecode
   `ASSERT(RFRenBBignumOnehot, $onehot0(rf_predec_bignum_o.rf_ren_b))
   `ASSERT(RFWeBignumOnehot,   $onehot0(rf_predec_bignum_o.rf_we))
 endmodule
+
