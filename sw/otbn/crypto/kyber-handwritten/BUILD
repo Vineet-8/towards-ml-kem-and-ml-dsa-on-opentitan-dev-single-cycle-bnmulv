@@ -161,4 +161,3 @@ otbn_library(
         "symmetric.s", 
     ],
 )
-otbn_library(
