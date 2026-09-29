@@ -747,6 +747,7 @@ module otbn_decoder
         rf_ren_a_bignum     = 1'b1;
         rf_we_bignum        = 1'b1;
         rf_wdata_sel_bignum = RfWdSelEx;
+        alu_vector_type_bignum = insn[27] ? alu_8s : alu_16h;
         if (insn[14:12] == 3'b110) begin
           rf_we_base          = 1'b1;
           rf_wdata_sel_base   = RfWdSelRejv;
@@ -1065,9 +1066,10 @@ module otbn_decoder
       InsnOpcodeBignumRejv: begin
         if (insn[14:12] == 3'b110)
           alu_operator_bignum = AluOpBignumRejv;
-        else if (insn[14:12] == 3'b100)
-          alu_operator_bignum = AluOpBignumMerv;
-        else
+        else if (insn[14:12] == 3'b100) begin
+          alu_operator_bignum     = AluOpBignumMerv;
+          alu_op_b_mux_sel_bignum = OpBSelRegister;
+        end else
           alu_operator_bignum = AluOpBignumExtv;
       end
       default: ;
@@ -1106,3 +1108,4 @@ module otbn_decoder
   `ASSERT(BaseRenOnBignumIndirectB, insn_valid_o & rf_b_indirect_bignum |-> rf_ren_b_base)
   `ASSERT(BaseRenOnBignumIndirectD, insn_valid_o & rf_d_indirect_bignum |-> rf_ren_b_base)
 endmodule
+
