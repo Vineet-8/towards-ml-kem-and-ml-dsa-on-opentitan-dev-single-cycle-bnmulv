@@ -7,6 +7,20 @@
 
 workspace(name = "lowrisc_opentitan")
 
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+http_archive(
+    name = "rules_python",
+    patch_cmds = [
+        "sed -i \"s/return str(self.metadata.name)/return str(self.metadata.name) if self.metadata.name and str(self.metadata.name) != \\\"None\\\" else os.path.basename(self.path).split(\\\"-\\\")[0]/\" python/pip_install/extract_wheels/lib/wheel.py",
+        "sed -i \"s/metadata.name.replace(\\\"-\\\", \\\"_\\\")/(metadata.name if metadata.name and str(metadata.name) != \\\"None\\\" else os.path.basename(self.path).split(\\\"-\\\")[0]).replace(\\\"-\\\", \\\"_\\\")/\" python/pip_install/extract_wheels/lib/wheel.py",
+        "sed -i \"s/metadata.version)/(metadata.version or os.path.basename(self.path).split(\\\"-\\\")[1]))/\" python/pip_install/extract_wheels/lib/wheel.py",
+        "sed -i \"s/whl.metadata.version/str(whl.metadata.version)/\" python/pip_install/extract_wheels/lib/bazel.py",
+    ],
+    sha256 = "9e9a58cff49f80afd1c9fcc7137b719531f7a7427cce4fda1d30ca27b4a46a8a",
+    strip_prefix = "rules_python-07c3f8547abbd5b97839a48af226a0fbcfaa5e7c",
+    url = "https://github.com/lowRISC/rules_python/archive/07c3f8547abbd5b97839a48af226a0fbcfaa5e7c.tar.gz",
+)
+
 # Bazel skylib library
 load("//third_party/skylib:repos.bzl", "bazel_skylib_repos")
 bazel_skylib_repos()
