@@ -67,7 +67,7 @@ stack:
   .zero STACK_SIZE
 stack_end:
 randombytes_keypair:
-  .zero 2*CRYPTO_BYTES
+  .zero 64
 kem_sk:
   .zero CRYPTO_SECRETKEYBYTES
 kem_pk:

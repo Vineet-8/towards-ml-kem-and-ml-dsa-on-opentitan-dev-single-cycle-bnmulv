@@ -1,3 +1,6 @@
+#ifndef KYBER_K
+#define KYBER_K 3
+#endif
 /* Copyright "Towards ML-KEM & ML-DSA on OpenTitan" Authors */
 /* Licensed under the Apache License, Version 2.0, see LICENSE for details. */
 /* SPDX-License-Identifier: Apache-2.0 */
@@ -63,7 +66,7 @@ ek:
 .balign 32
 .globl coins
 coins:
-  .zero 2*CRYPTO_BYTES
+  .zero 64
 
 /* Modulus: KYBER_Q = 3329 */
 .globl modulus

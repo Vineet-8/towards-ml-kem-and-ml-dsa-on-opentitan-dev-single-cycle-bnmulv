@@ -2,6 +2,14 @@
 /* Licensed under the Apache License, Version 2.0, see LICENSE for details. */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+
+/* Register aliases - duplicated here for GCC preprocessor compatibility */
+#define cmp_mask w9
+#define coeff_mask w10
+#define cand w11
+#define mod w12
+#define accumulator w13
+#define accumulator_count t6
 .text
 /* #define SWSHAKE */
 
