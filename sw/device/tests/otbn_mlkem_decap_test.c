@@ -80,6 +80,8 @@ static void test_sec_wipe(dif_otbn_t *otbn) {
 }
 
 static void test_mlkem_decap(dif_otbn_t *otbn) {
+  uint32_t insn_cnt;
+
   LOG_INFO("Generate inputs");
   uint8_t coins[2*KYBER_SYMBYTES];
   randombytes(coins, 2*KYBER_SYMBYTES);
@@ -112,6 +114,8 @@ static void test_mlkem_decap(dif_otbn_t *otbn) {
   CHECK_STATUS_OK(otbn_testutils_execute(otbn));
   CHECK(dif_otbn_set_ctrl_software_errs_fatal(otbn, false) == kDifUnavailable);
   CHECK_STATUS_OK(otbn_testutils_wait_for_done(otbn, kDifOtbnErrBitsNoError));
+  CHECK_DIF_OK(dif_otbn_get_insn_cnt(otbn, &insn_cnt));
+  LOG_INFO("Plain decap insn_cnt: %u", insn_cnt);
 
   LOG_INFO("Retrieve results");
   CHECK_STATUS_OK(otbn_testutils_read_data(otbn, CRYPTO_BYTES, kSsDPlain, ssD));
@@ -136,6 +140,8 @@ static void test_mlkem_decap(dif_otbn_t *otbn) {
   CHECK_STATUS_OK(otbn_testutils_execute(otbn));
   CHECK(dif_otbn_set_ctrl_software_errs_fatal(otbn, false) == kDifUnavailable);
   CHECK_STATUS_OK(otbn_testutils_wait_for_done(otbn, kDifOtbnErrBitsNoError));
+  CHECK_DIF_OK(dif_otbn_get_insn_cnt(otbn, &insn_cnt));
+  LOG_INFO("Base decap insn_cnt: %u", insn_cnt);
 
   LOG_INFO("Retrieve results");
   CHECK_STATUS_OK(otbn_testutils_read_data(otbn, CRYPTO_BYTES, kSsDBase, ssD));
@@ -160,6 +166,8 @@ static void test_mlkem_decap(dif_otbn_t *otbn) {
   CHECK_STATUS_OK(otbn_testutils_execute(otbn));
   CHECK(dif_otbn_set_ctrl_software_errs_fatal(otbn, false) == kDifUnavailable);
   CHECK_STATUS_OK(otbn_testutils_wait_for_done(otbn, kDifOtbnErrBitsNoError));
+  CHECK_DIF_OK(dif_otbn_get_insn_cnt(otbn, &insn_cnt));
+  LOG_INFO("ISAEXT decap insn_cnt: %u", insn_cnt);
 
   LOG_INFO("Retrieve results");
   CHECK_STATUS_OK(otbn_testutils_read_data(otbn, CRYPTO_BYTES, kSsDIsaext, ssD));
@@ -192,3 +200,4 @@ bool test_main(void) {
   return true;
 
 }
+
